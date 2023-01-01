@@ -11,6 +11,9 @@ It's better if you download it or play if fullscreen
 
 Leave feedback or suggestions about the game
 
+If I continue to work on this game, I will post the improvements in this repo
+I hope future me does continue the project
+
 ENJOY
 
 
