@@ -46,8 +46,7 @@ local function endGame()    -- Ends the game (Game Over)
 end
 
 function love.mousepressed(x, y, button, isTouch, presses)  -- Checks which button was pressed and what state the game was in when the button was pressed
-    -- If the left mouse button is pressed
-    if button == 1 then
+    if button == 1 then     --If the left mouse button is pressed
         if gameState["menu"] then 
             for buttonIndex in pairs(buttons.menuState) do
                 buttons.menuState[buttonIndex]:checkPressed(x, y)
@@ -64,7 +63,7 @@ function love.mousepressed(x, y, button, isTouch, presses)  -- Checks which butt
     end
 end
 
-function love.keypressed(key)   --This function is called automatically whenever a key is pressed checks which key has been pressed
+function love.keypressed(key)   --This function is called automatically whenever a key is pressed. It checks which key was pressed and performs a specific action
     if key == "escape" and timer >= 0 and gameState["game"] then
         pauseGame()
     elseif key == "escape" and timer ~= 0 then
@@ -96,8 +95,7 @@ function love.load()
     pause = false
     score = 0
     highScore = 0
-    -- This loads the file that contains the players HighScore if they has played the game before
-    load("HIGH")
+    load("HIGH")        -- This loads the file that contains the players HighScore if they has played the game before
     timer=0
     alpha = 1
     snakeAlive = true
