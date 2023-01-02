@@ -8,7 +8,7 @@ local gameState = { -- The different states of the game
     over = false,
 }
 
-local buttons = {   -- The table containing tables which contain buttons for a specific game state
+local buttons = {   -- A table containing tables which contain buttons for a specific game state
     pauseState = {},
     menuState = {},
     overState = {}
