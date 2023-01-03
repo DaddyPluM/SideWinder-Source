@@ -266,10 +266,10 @@ function love.draw()
         --Text
 
         for directionIndex, direction in ipairs(directionQueue) do
-        love.graphics.setColor(1,1,1)
-        love.graphics.print(
+            love.graphics.setColor(1,1,1)
+            love.graphics.print(
             "directionQueue[" .. directionIndex .. "]: "  .. direction, 15, 15 * directionIndex
-        )
+            )
         end
         
         for segmentIndex, segment in ipairs(snakeSegments) do
