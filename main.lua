@@ -121,14 +121,11 @@ function love.load()
     local cWidth = math.ceil(gridXCount)
     if fWidth == cWidth then
         gridXCount = fWidth
-    end
-    if fHeight == cHeight then
+    elseif fHeight == cHeight then
         gridYCount = fHeight
-    end
-    if fWidth <= cWidth then
+    elseif fWidth <= cWidth then
         gridXCount = fWidth
-    end
-    if fHeight <= cHeight then
+    elseif fHeight <= cHeight then
         gridYCount = fHeight
     end
 
