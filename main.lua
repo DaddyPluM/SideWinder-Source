@@ -299,9 +299,6 @@ function love.draw()    --This renders objects to the screen
 
         love.graphics.setColor(1, 0, 0)     --This draws the food onto the screen
         drawCell(foodPosition.x, foodPosition.y)
-
-        love.graphics.print(gridXCount, 0, 0)
-        love.graphics.print(snakeSegments[1].x, 0, 30)
         end
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
