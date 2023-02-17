@@ -115,19 +115,8 @@ function love.load()
     gridXCount = winWidth/15
     gridYCount = winHeight/15
     --Calculations are done to round the divided numbers to their nearest whole number if they are not whole numbers
-    local fHeight = math.floor(gridYCount)
-    local fWidth = math.floor(gridXCount)
-    local cHeight = math.ceil(gridYCount)
-    local cWidth = math.ceil(gridXCount)
-    if fWidth == cWidth then
-        gridXCount = fWidth
-    elseif fHeight == cHeight then
-        gridYCount = fHeight
-    elseif fWidth <= cWidth then
-        gridXCount = fWidth
-    elseif fHeight <= cHeight then
-        gridYCount = fHeight
-    end
+    gridXCount = math.floor(gridXCount + 0.5)
+    gridYCount = math.floor(gridYCount + 0.5)
 
     --Picking a random position in the game.
     foodPosition= {
@@ -310,6 +299,9 @@ function love.draw()    --This renders objects to the screen
 
         love.graphics.setColor(1, 0, 0)     --This draws the food onto the screen
         drawCell(foodPosition.x, foodPosition.y)
+
+        love.graphics.print(gridXCount, 0, 0)
+        love.graphics.print(snakeSegments[1].x, 0, 30)
         end
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
