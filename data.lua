@@ -3,7 +3,9 @@ function save(filename, _data)      --This saves the player's HighScore to a JSO
 end
 
 function load(filename)     --This loads the player's HighScore
-    if love.filesystem.getInfo(filename..".JSON")  and love.filesystem.read(filename..".JSON") ~= 0 then
-        highScore = tonumber((love.filesystem.read(filename..".JSON")))
+    if love.filesystem.getInfo(filename..".JSON")  and love.filesystem.read(filename..".JSON") ~= nil then
+        return tonumber((love.filesystem.read(filename..".JSON")))
+    else
+        return 0
     end
 end

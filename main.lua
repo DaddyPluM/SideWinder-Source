@@ -94,8 +94,7 @@ function love.load()
     -- Loading variables
     pause = false
     score = 0
-    highScore = 0
-    load("HIGH")        -- This loads the file that contains the players HighScore if they has played the game before
+    highScore = load("HIGH")       -- This loads the file that contains the players HighScore if they has played the game before
     timer=0
     alpha = 1
     snakeAlive = true
