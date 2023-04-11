@@ -1,6 +1,28 @@
 local data = require "data"
 local button = require "button"
 
+local winWidth, winHeight = love.window.getMode()
+local buttons = {}
+local pause = false
+local score = 0
+local highScore = 0
+local timer = 0
+local snakeSegments = {}
+local cellSize = 15
+local snakeAlive = true
+local alpha = 1
+local gridXCount = 0
+local gridYCount = 0
+local directionQueue = {}
+local img = love.graphics.newImage("ball.png")
+local ps = love.graphics.newParticleSystem(img,32)
+--Picking a random position in the game.
+local foodPosition= {
+    x = love.math.random(1, gridXCount),
+    y = love.math.random(1, gridYCount)
+}
+
+
 local gameState = { -- The different states of the game
     menu = true,    --When the player opens the game, it will show the menu by default
     game = false,
@@ -88,26 +110,16 @@ function love.load()
     -- Loading all the buttons that are going to be used in-game
     buttons.menuState.playGame = button("Play", startGame, nil, 100, 20)
     buttons.menuState.exitGame = button("Exit", love.event.quit, nil, 100, 20)
-    buttons.pauseState.mainMenu = button("Main Menu", startMenu, nil, 100, 20)
+    buttons.pauseState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.overState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.overState.restart = button("Restart", startGame , nil, 120, 20)
-    -- Loading variables
-    pause = false
-    score = 0
-    highScore = load("HIGH")       -- This loads the file that contains the players HighScore if they has played the game before
-    timer=0
-    alpha = 1
+    highScore = tonumber(load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
     snakeAlive = true
     --Setting values that the particle system will use
-    img = love.graphics.newImage("ball.png")
-    ps = love.graphics.newParticleSystem(img,32)
     ps:setParticleLifetime(.5)
     ps:setSpeed(150)
     ps:setSizes(1,.5)
     ps:setSpread(6)
-    --Window Dimensions
-    winHeight = love.graphics.getHeight()
-    winWidth= love.graphics.getWidth()
 
     --[[The window dimensions are divided by 15 because most of the objects in the game are 15 by 15 squares.
     Dividing it makes implementing some features easier]]
@@ -116,12 +128,6 @@ function love.load()
     --Calculations are done to round the divided numbers to their nearest whole number if they are not whole numbers
     gridXCount = math.floor(gridXCount + 0.5)
     gridYCount = math.floor(gridYCount + 0.5)
-
-    --Picking a random position in the game.
-    foodPosition= {
-        x = love.math.random(1, gridXCount),
-        y = love.math.random(1, gridYCount)
-    }
 
     --This makes the snakes move right when the game starts
     directionQueue = {"right"}
@@ -180,7 +186,7 @@ end
 function love.update(dt)    -- Called every frame
     ps:update(dt)
     timer = timer+dt
-    full=ps:getCount()
+    local full = ps:getCount()
     if snakeAlive then  --This happens if the snake is still alive
         if timer >= .1  then --This allows us to control the game's update rate 
             timer = 0   --The timer will reset after some time has passed and when it does, the parts of the game that are in this if statement will update
@@ -247,15 +253,17 @@ end
 
 function love.draw()    --This renders objects to the screen
     love.graphics.setBackgroundColor(0, .2, 0)
+	local gameOverFont = love.graphics.newFont(36)
+	local highScoreFont = love.graphics.newFont(23)
+	local pauseFont = love.graphics.newFont(35)
     if gameState["game"] then   --This occurs when the game's state is "game", when the player can move the snake
-        local cellSize = 15
         love.graphics.setColor(0,1,.5)
-        love.graphics.print("score: "..score,winWidth/2-#"score")
+        love.graphics.printf("score: "..score, 0, 0, winWidth, "center")
         love.graphics.setColor(1, .3, 0)
-        ps:setPosition((foodPosition.x-.5)*cellSize,(foodPosition.y-.5)*cellSize)
-        ps:setColors(1,1,1,alpha)
+        ps:setPosition((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize)
+        ps:setColors(1, 1, 1, alpha)
         love.graphics.draw(ps)
-        local function drawCell(x,y)    --Calling this fuction wil draw a square onto the screen
+        local function drawCell(x, y)    --Calling this fuction wil draw a square onto the screen
             love.graphics.rectangle(
                 "fill",
                 (x - 1) * cellSize,
@@ -284,11 +292,11 @@ function love.draw()    --This renders objects to the screen
         )
         end]]
         
-        for segmentIndex, segment in ipairs(snakeSegments) do   
+        for segmentIndex, segment in pairs(snakeSegments) do   
             if snakeAlive then
-                love.graphics.setColor(0, 1-(0+segmentIndex/40), 1)     --This gives the snake's body a gradient effect
+                love.graphics.setColor(0, 1 - (0 + segmentIndex/40), 1)     --This gives the snake's body a gradient effect
             else
-                love.graphics.setColor(timer,1+timer,32+timer)  --This changes the snakes's color to whit when it dies
+                love.graphics.setColor(timer, 1 + timer, 32 + timer)  --This changes the snakes's color to whit when it dies
             end
             if segmentIndex == 1 then
                 drawCircle(segment.x , segment.y)   --This draws the head of the snake
@@ -301,23 +309,23 @@ function love.draw()    --This renders objects to the screen
         end
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
-        buttons.menuState.playGame:draw((winWidth/2)-50, (winHeight/2)-20,40,5)
-        buttons.menuState.exitGame:draw((winWidth/2)-50, (winHeight/2)+10,40,5)
+        buttons.menuState.playGame:draw((winWidth/2) - 50, (winHeight/2) - 20,40,5)
+        buttons.menuState.exitGame:draw((winWidth/2) - 50, (winHeight/2) + 10,40,5)
         reset()
     elseif gameState["pause"] then 
         love.graphics.setColor(0,0,1)
-        love.graphics.print("PAUSE", winWidth/2-#"PAUSE"*20, winHeight/2-200, 0, 5,5)
-        buttons.pauseState.mainMenu:draw((winWidth/2)-50, (winHeight/2)-20,(50/2) - (#"Main Menu"/2),3)
+		love.graphics.printf("PAUSE", pauseFont, 0, (winHeight/2) - 200, winWidth, "center")
+        buttons.pauseState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20, (50/2) - (#"Main Menu"/2), 3)
     elseif gameState["over"] then
         love.graphics.setColor(0,0,1)
         if score > highScore then   --Saving the score if it is higher than the HighScore
             highScore = score
             save("HIGH", highScore)
         end
-        love.graphics.print("GAMEOVER", winWidth/2-#"GAMEOVER"*15, winHeight/2-250, 0, 4,4)
+		love.graphics.printf("GAMEOVER", gameOverFont,0, winHeight/2 - 250, winWidth, "center")
         love.graphics.setColor(0,1,0)
-        love.graphics.print("HighScore: " .. highScore, 330, winHeight/2-150, 0, 2,2)
-        buttons.overState.mainMenu:draw((winWidth/2)-50, (winHeight/2)-20,(60/2) - (#"Main Menu"/2),3)
-        buttons.overState.restart:draw((winWidth/2)-50, (winHeight/2)+10,(60/2) - (#"Restart"/2),3)
+		love.graphics.printf("HighScore: " .. highScore, highScoreFont,0, winHeight/2 - 150, winWidth, "center")
+        buttons.overState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20, (60/2) - (#"Main Menu"/2), 3)
+        buttons.overState.restart:draw((winWidth/2) - 60, (winHeight/2) + 10,(60/2) - (#"Restart"/2), 3)
     end
 end
