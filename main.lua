@@ -1,8 +1,8 @@
 local data = require "data"
 local button = require "button"
 
+
 local winWidth, winHeight = love.window.getMode()
-local buttons = {}
 local pause = false
 local score = 0
 local highScore = 0
@@ -15,9 +15,8 @@ local gridXCount = 0
 local gridYCount = 0
 local directionQueue = {}
 local img = love.graphics.newImage("ball.png")
-local ps = love.graphics.newParticleSystem(img,32)
---Picking a random position in the game.
-local foodPosition= {
+local particles = {}
+local foodPosition= {--Picking a random position in the game
     x = love.math.random(1, gridXCount),
     y = love.math.random(1, gridYCount)
 }
@@ -85,6 +84,19 @@ function love.mousepressed(x, y, button, isTouch, presses)  -- Checks which butt
     end
 end
 
+function createParticles(x, y)
+    local a = love.graphics.newParticleSystem(img,32)
+    local alpha = 1
+    a:setParticleLifetime(.5)
+    a:setSpeed(150)
+    a:setSizes(1,.5)
+    a:setSpread(6)
+    a:setPosition(x, y)
+    a:emit(10)
+    local t = {a, alpha}
+    table.insert(particles,t)
+end
+
 function love.keypressed(key)   --This function is called automatically whenever a key is pressed. It checks which key was pressed and performs a specific action
     if key == "escape" and timer >= 0 and gameState["game"] then
         pauseGame()
@@ -115,11 +127,6 @@ function love.load()
     buttons.overState.restart = button("Restart", startGame , nil, 120, 20)
     highScore = tonumber(load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
     snakeAlive = true
-    --Setting values that the particle system will use
-    ps:setParticleLifetime(.5)
-    ps:setSpeed(150)
-    ps:setSizes(1,.5)
-    ps:setSpread(6)
 
     --[[The window dimensions are divided by 15 because most of the objects in the game are 15 by 15 squares.
     Dividing it makes implementing some features easier]]
@@ -184,17 +191,24 @@ function love.load()
 end
 
 function love.update(dt)    -- Called every frame
-    ps:update(dt)
-    timer = timer+dt
-    local full = ps:getCount()
+    if #particles > 0 then
+        for i, v in pairs(particles) do
+            if v[2] <= 0 then
+              table.remove(particles, i)
+            end
+            local full = v[1]:getCount()
+            if full == 10 then
+                v[2] = v[2] - .01
+            else
+                v[2] = 1
+            end
+            v[1]:update(dt)
+        end
+    end
+    timer = timer + dt
     if snakeAlive then  --This happens if the snake is still alive
         if timer >= .1  then --This allows us to control the game's update rate 
             timer = 0   --The timer will reset after some time has passed and when it does, the parts of the game that are in this if statement will update
-            if full == 10 then
-                alpha = alpha-.25
-            else
-                alpha = 1
-            end
             --These variables are used to move the snake
             local nextXPosition = snakeSegments[1].x
             local nextYPosition = snakeSegments[1].y
@@ -235,7 +249,7 @@ function love.update(dt)    -- Called every frame
             if canMove then
                 table.insert(snakeSegments, 1, {x = nextXPosition, y = nextYPosition}) 
                 if snakeSegments[1].x == foodPosition.x and snakeSegments[1].y == foodPosition.y then   --When the snake eats and apple
-                    ps:emit(10)
+                    createParticles((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize)
                     moveFood()
                     score = score + 1
                 else
@@ -257,12 +271,13 @@ function love.draw()    --This renders objects to the screen
 	local highScoreFont = love.graphics.newFont(23)
 	local pauseFont = love.graphics.newFont(35)
     if gameState["game"] then   --This occurs when the game's state is "game", when the player can move the snake
-        love.graphics.setColor(0,1,.5)
-        love.graphics.printf("score: "..score, 0, 0, winWidth, "center")
         love.graphics.setColor(1, .3, 0)
-        ps:setPosition((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize)
-        ps:setColors(1, 1, 1, alpha)
-        love.graphics.draw(ps)
+        if #particles > 0 then
+            for i, v in pairs(particles) do
+                v[1]:setColors(1, 1, 1, v[2])
+                love.graphics.draw(v[1])
+            end
+        end
         local function drawCell(x, y)    --Calling this fuction wil draw a square onto the screen
             love.graphics.rectangle(
                 "fill",
@@ -272,12 +287,12 @@ function love.draw()    --This renders objects to the screen
                 cellSize 
             )
         end
-        local function drawCircle(x,y)    --Calling this function will draw a circle onto the screen
+        local function drawCircle(x,y, radius)    --Calling this function will draw a circle onto the screen
             love.graphics.circle(
                 "fill",
                 (x - 1) * cellSize + cellSize/2,
                 (y - 1) * cellSize + cellSize/2,
-                cellSize/1.5
+                radius
             )
         end
         
@@ -299,13 +314,16 @@ function love.draw()    --This renders objects to the screen
                 love.graphics.setColor(timer, 1 + timer, 32 + timer)  --This changes the snakes's color to whit when it dies
             end
             if segmentIndex == 1 then
-                drawCircle(segment.x , segment.y)   --This draws the head of the snake
+                drawCircle(segment.x , segment.y, cellSize/1.5)   --This draws the head of the snake
             else
                 drawCell(segment.x, segment.y)   --This draws the rest of the snake
             end
 
         love.graphics.setColor(1, 0, 0)     --This draws the food onto the screen
-        drawCell(foodPosition.x, foodPosition.y)
+        drawCircle(foodPosition.x, foodPosition.y, cellSize/2.5)
+        love.graphics.setColor(0,1,.5)
+        love.graphics.printf("score: "..score, 0, 0, winWidth, "center")    --This displays the score at the top of the screen
+        love.graphics.setColor(1, .3, 0)
         end
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
