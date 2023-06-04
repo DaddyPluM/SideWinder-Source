@@ -46,6 +46,9 @@ local function startGame()  --Begins the game
 end
 
 local function startMenu()  --Opens the main menu
+    if gameState["over"] then
+        reset()
+    end
     gameState["menu"] = true
     gameState["game"] = false
     gameState["pause"] = false
@@ -114,7 +117,6 @@ function love.keypressed(key)   --This function is called automatically whenever
     or
     key == "down" and directionQueue[#directionQueue] ~= "up" then
         table.insert(directionQueue, key)
-    
     end
 end
 
@@ -125,7 +127,7 @@ function love.load()
     buttons.pauseState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.overState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.overState.restart = button("Restart", startGame , nil, 120, 20)
-    highScore = tonumber(load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
+    highScore = tonumber(data.load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
     snakeAlive = true
 
     --[[The window dimensions are divided by 15 because most of the objects in the game are 15 by 15 squares.
@@ -198,7 +200,7 @@ function love.update(dt)    -- Called every frame
             end
             local full = v[1]:getCount()
             if full == 10 then
-                v[2] = v[2] - .01
+                v[2] = v[2] - .015
             else
                 v[2] = 1
             end
@@ -318,13 +320,12 @@ function love.draw()    --This renders objects to the screen
             else
                 drawCell(segment.x, segment.y)   --This draws the rest of the snake
             end
-
+        end
         love.graphics.setColor(1, 0, 0)     --This draws the food onto the screen
         drawCircle(foodPosition.x, foodPosition.y, cellSize/2.5)
         love.graphics.setColor(0,1,.5)
         love.graphics.printf("score: "..score, 0, 0, winWidth, "center")    --This displays the score at the top of the screen
         love.graphics.setColor(1, .3, 0)
-        end
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
         buttons.menuState.playGame:draw((winWidth/2) - 50, (winHeight/2) - 20,40,5)
@@ -338,7 +339,7 @@ function love.draw()    --This renders objects to the screen
         love.graphics.setColor(0,0,1)
         if score > highScore then   --Saving the score if it is higher than the HighScore
             highScore = score
-            save("HIGH", highScore)
+            data.save("HIGH", highScore)
         end
 		love.graphics.printf("GAMEOVER", gameOverFont,0, winHeight/2 - 250, winWidth, "center")
         love.graphics.setColor(0,1,0)
