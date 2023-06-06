@@ -1,5 +1,7 @@
 local data = require "data"
 local button = require "button"
+require "particles"
+local profile = require "profile"
 
 
 local winWidth, winHeight = love.window.getMode()
@@ -46,6 +48,7 @@ local function startGame()  --Begins the game
 end
 
 local function startMenu()  --Opens the main menu
+    reset()
     if gameState["over"] then
         reset()
     end
@@ -85,19 +88,6 @@ function love.mousepressed(x, y, button, isTouch, presses)  -- Checks which butt
             end
         end
     end
-end
-
-function createParticles(x, y)
-    local a = love.graphics.newParticleSystem(img,32)
-    local alpha = 1
-    a:setParticleLifetime(.5)
-    a:setSpeed(150)
-    a:setSizes(1,.5)
-    a:setSpread(6)
-    a:setPosition(x, y)
-    a:emit(10)
-    local t = {a, alpha}
-    table.insert(particles,t)
 end
 
 function love.keypressed(key)   --This function is called automatically whenever a key is pressed. It checks which key was pressed and performs a specific action
@@ -172,7 +162,6 @@ function love.load()
             love.math.random(#possibleFoodPositions)
         ]
     end
-    moveFood()
 
     function reset()    -- Resets some game values
         snakeSegments = {
@@ -195,75 +184,73 @@ end
 function love.update(dt)    -- Called every frame
     if #particles > 0 then
         for i, v in pairs(particles) do
-            if v[2] <= 0 then
+            if v.finished == true then
               table.remove(particles, i)
             end
-            local full = v[1]:getCount()
-            if full == 10 then
-                v[2] = v[2] - .015
-            else
-                v[2] = 1
-            end
-            v[1]:update(dt)
+            v:update(dt)
         end
     end
     timer = timer + dt
-    if snakeAlive then  --This happens if the snake is still alive
-        if timer >= .1  then --This allows us to control the game's update rate 
-            timer = 0   --The timer will reset after some time has passed and when it does, the parts of the game that are in this if statement will update
-            --These variables are used to move the snake
-            local nextXPosition = snakeSegments[1].x
-            local nextYPosition = snakeSegments[1].y
-            local canMove = true
+    if gameState["game"] then
+        if snakeAlive then  --This happens if the snake is still alive
+            if timer >= .1  then --This allows us to control the game's update rate 
+                timer = 0   --The timer will reset after some time has passed and when it does, the parts of the game that are in this if statement will update
+                --These variables are used to move the snake
+                local nextXPosition = snakeSegments[1].x
+                local nextYPosition = snakeSegments[1].y
+                local canMove = true
 
-            if #directionQueue > 1 then
-                table.remove(directionQueue,1)
-            end
-            --This makes the snake wrap around the screen when it goes past an edge
-            if directionQueue[1] == "right" then nextXPosition = nextXPosition+1
-                if nextXPosition > gridXCount then
-                    nextXPosition = 1
+                if #directionQueue > 1 then
+                    table.remove(directionQueue,1)
                 end
-            elseif directionQueue[1] == "left" then nextXPosition = nextXPosition-1
-                if nextXPosition < 1 then
-                    nextXPosition = gridXCount
+                --This makes the snake wrap around the screen when it goes past an edge
+                if directionQueue[1] == "right" then nextXPosition = nextXPosition+1
+                    if nextXPosition > gridXCount then
+                        nextXPosition = 1
+                    end
+                elseif directionQueue[1] == "left" then nextXPosition = nextXPosition-1
+                    if nextXPosition < 1 then
+                        nextXPosition = gridXCount
+                    end
+                elseif directionQueue[1] == "up" then nextYPosition = nextYPosition-1
+                    if nextYPosition < 1 then
+                        nextYPosition = gridYCount
+                    end
+                elseif directionQueue[1] == "down" then nextYPosition = nextYPosition+1
+                    if nextYPosition > gridYCount then
+                        nextYPosition = 1
+                    end
                 end
-            elseif directionQueue[1] == "up" then nextYPosition = nextYPosition-1
-                if nextYPosition < 1 then
-                    nextYPosition = gridYCount
-                end
-            elseif directionQueue[1] == "down" then nextYPosition = nextYPosition+1
-                if nextYPosition > gridYCount then
-                    nextYPosition = 1
-                end
-            end
 
-            for segmentIndex, segment in ipairs(snakeSegments) do   --This checks if the head of the snake is going to collide with a part of it (segment) that is not the tail
-                if segmentIndex ~= #snakeSegments
-                and
-                nextXPosition == segment.x
-                and
-                nextYPosition == segment.y then
-                    canMove = false
+                for segmentIndex, segment in ipairs(snakeSegments) do   --This checks if the head of the snake is going to collide with a part of it (segment) that is not the tail
+                    if segmentIndex ~= #snakeSegments
+                    and
+                    nextXPosition == segment.x
+                    and
+                    nextYPosition == segment.y then
+                        canMove = false
+                    end
                 end
-            end
 
-            if canMove then
-                table.insert(snakeSegments, 1, {x = nextXPosition, y = nextYPosition}) 
-                if snakeSegments[1].x == foodPosition.x and snakeSegments[1].y == foodPosition.y then   --When the snake eats and apple
-                    createParticles((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize)
-                    moveFood()
-                    score = score + 1
+                if canMove then
+                    table.insert(snakeSegments, 1, {x = nextXPosition, y = nextYPosition}) 
+                    if snakeSegments[1].x == foodPosition.x and snakeSegments[1].y == foodPosition.y then   --When the snake eats and apple
+                        table.insert(particles, createParticle((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize, 150, 6, 10, 1, .5, .5, 1, true, img))
+                        moveFood()
+                        score = score + 1
+                    else
+                        table.remove(snakeSegments)  --When the snake doesn't eat an apple, it removes the last segment of the snake so it looks like the snake is moving and doesn't infinetly grow
+                    end
+                        print(profile.report(30))
+                        profile.reset()
                 else
-                    table.remove(snakeSegments)  --When the snake doesn't eat an apple, it removes the last segment of the snake so it looks like the snake is moving and doesn't infinetly grow
-                end
-            else
-                snakeAlive = false      --When the snake is no longer able to move
-             end
+                    snakeAlive = false      --When the snake is no longer able to move
+                 end
+            end
+            
+        elseif  timer >= 2 then     --When the snake dies, the timer will no longer reset
+            endGame()
         end
-        
-    elseif  timer >= 2 then     --When the snake dies, the timer will no longer reset
-        endGame()
     end
 end
 
@@ -276,8 +263,7 @@ function love.draw()    --This renders objects to the screen
         love.graphics.setColor(1, .3, 0)
         if #particles > 0 then
             for i, v in pairs(particles) do
-                v[1]:setColors(1, 1, 1, v[2])
-                love.graphics.draw(v[1])
+                v:draw()
             end
         end
         local function drawCell(x, y)    --Calling this fuction wil draw a square onto the screen
@@ -330,7 +316,6 @@ function love.draw()    --This renders objects to the screen
         --This creates the buttons for the main menu
         buttons.menuState.playGame:draw((winWidth/2) - 50, (winHeight/2) - 20,40,5)
         buttons.menuState.exitGame:draw((winWidth/2) - 50, (winHeight/2) + 10,40,5)
-        reset()
     elseif gameState["pause"] then 
         love.graphics.setColor(0,0,1)
 		love.graphics.printf("PAUSE", pauseFont, 0, (winHeight/2) - 200, winWidth, "center")
