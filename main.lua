@@ -108,6 +108,9 @@ function love.keypressed(key)   --This function is called automatically whenever
     key == "down" and directionQueue[#directionQueue] ~= "up" then
         table.insert(directionQueue, key)
     end
+    if key == "space" then
+      --moveFood()
+    end
 end
 
 function love.load()
@@ -115,8 +118,9 @@ function love.load()
     buttons.menuState.playGame = button("Play", startGame, nil, 100, 20)
     buttons.menuState.exitGame = button("Exit", love.event.quit, nil, 100, 20)
     buttons.pauseState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
-    buttons.overState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
-    buttons.overState.restart = button("Restart", startGame , nil, 120, 20)
+    buttons.pauseState.resume = button("Resume", startGame, nil, 120, 20)
+    buttons.overState.mainMenu = button("Main Menu", startGame, nil, 120, 20)
+    buttons.overState.restart = button("Restart", startGame, nil, 120, 20)
     highScore = tonumber(data.load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
     snakeAlive = true
 
@@ -131,39 +135,37 @@ function love.load()
     --This makes the snakes move right when the game starts
     directionQueue = {"right"}
 
-    --[[ The table containing the positions of the snake's segments.
-     the snake is made up of square and this tells the computer where to spawn them]]
+    --[[The table containing the positions of the snake's segments.
+     The snake is made up of square and this tells the computer where to spawn them]]
     snakeSegments = {
         {x = 3, y = 1},
         {x = 2, y = 1},
         {x= 1, y = 1}
     }
+    possibleFoodPositions = {}
+    pfp = {}    --This table is used to cache the position of every cell in the game
+    for foodX = 1, gridXCount do
+        for foodY = 1, gridYCount do
+            table.insert(pfp, {x = foodX, y = foodY})   --Store every possible space(cell) an object can occupy in a table
+        end
+    end
     
     function moveFood()     -- This spawns the food on a square that isn't already occupied
-        local possibleFoodPositions = {}
-
-        for foodX = 1, gridXCount do
-            for foodY = 1, gridYCount do
-                local possible = true
-
-                for segmentIndex, segment in ipairs(snakeSegments) do
-                    if foodX == segment.x and foodY == segment.y then
-                        possible = false
-                    end
-                end
-
-                if possible then
-                    table.insert(possibleFoodPositions, {x = foodX, y = foodY})
-                end
+        table.move(pfp, 1, #pfp, 1, possibleFoodPositions)  --Reset the possibleFoodPositions table by copying the values from the pfp table into it
+        for segmentIndex, segment in pairs(snakeSegments) do
+            for i, v in pairs(possibleFoodPositions) do
+                if v.x == segment.x or v.y == segment.y then
+                    table.remove(possibleFoodPositions, i)
+                end                
             end
         end
-
         foodPosition = possibleFoodPositions[
             love.math.random(#possibleFoodPositions)
         ]
+        --print(table.maxn(possibleFoodPositions))
     end
 
-    function reset()    -- Resets some game values
+    function reset()    -- Reset the value of some variables
         snakeSegments = {
             {x = 3, y = 1},
             {x = 2, y = 1},
@@ -182,12 +184,12 @@ function love.load()
 end
 
 function love.update(dt)    -- Called every frame
-    if #particles > 0 then
+    if #particles > 0 then      --If there are particles present in-game
         for i, v in pairs(particles) do
-            if v.finished == true then
-              table.remove(particles, i)
+            if v.finished == true then      --If particle emiters have exceeded their lifetime
+              table.remove(particles, i)    --Remove particle emitters that have exceeded their lifetime
             end
-            v:update(dt)
+            v:update(dt)    --Update particles
         end
     end
     timer = timer + dt
@@ -235,14 +237,12 @@ function love.update(dt)    -- Called every frame
                 if canMove then
                     table.insert(snakeSegments, 1, {x = nextXPosition, y = nextYPosition}) 
                     if snakeSegments[1].x == foodPosition.x and snakeSegments[1].y == foodPosition.y then   --When the snake eats and apple
-                        table.insert(particles, createParticle((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize, 150, 6, 10, 1, .5, .5, 1, true, img))
+                        table.insert(particles, createParticle((foodPosition.x - .5) * cellSize, (foodPosition.y - .5) * cellSize, 150, 360, 10, 1, 2, .3, 1, true, img))
                         moveFood()
                         score = score + 1
                     else
                         table.remove(snakeSegments)  --When the snake doesn't eat an apple, it removes the last segment of the snake so it looks like the snake is moving and doesn't infinetly grow
                     end
-                        print(profile.report(30))
-                        profile.reset()
                 else
                     snakeAlive = false      --When the snake is no longer able to move
                  end
@@ -261,12 +261,12 @@ function love.draw()    --This renders objects to the screen
 	local pauseFont = love.graphics.newFont(35)
     if gameState["game"] then   --This occurs when the game's state is "game", when the player can move the snake
         love.graphics.setColor(1, .3, 0)
-        if #particles > 0 then
+        if #particles > 0 then  --If there are particles present in-game
             for i, v in pairs(particles) do
-                v:draw()
+                v:draw()    --Draw particles
             end
         end
-        local function drawCell(x, y)    --Calling this fuction wil draw a square onto the screen
+        local function drawCell(x, y)    --Calling this fuction will draw a square onto the screen
             love.graphics.rectangle(
                 "fill",
                 (x - 1) * cellSize,
@@ -314,12 +314,13 @@ function love.draw()    --This renders objects to the screen
         love.graphics.setColor(1, .3, 0)
     elseif  gameState["menu"] then  
         --This creates the buttons for the main menu
-        buttons.menuState.playGame:draw((winWidth/2) - 50, (winHeight/2) - 20,40,5)
-        buttons.menuState.exitGame:draw((winWidth/2) - 50, (winHeight/2) + 10,40,5)
+        buttons.menuState.playGame:draw((winWidth/2) - 50, (winHeight/2) - 20)
+        buttons.menuState.exitGame:draw((winWidth/2) - 50, (winHeight/2) + 10)
     elseif gameState["pause"] then 
         love.graphics.setColor(0,0,1)
 		love.graphics.printf("PAUSE", pauseFont, 0, (winHeight/2) - 200, winWidth, "center")
-        buttons.pauseState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20, (50/2) - (#"Main Menu"/2), 3)
+        buttons.pauseState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20)
+        buttons.pauseState.resume:draw((winWidth/2) - 60, (winHeight/2) + 10)
     elseif gameState["over"] then
         love.graphics.setColor(0,0,1)
         if score > highScore then   --Saving the score if it is higher than the HighScore
@@ -329,7 +330,7 @@ function love.draw()    --This renders objects to the screen
 		love.graphics.printf("GAMEOVER", gameOverFont,0, winHeight/2 - 250, winWidth, "center")
         love.graphics.setColor(0,1,0)
 		love.graphics.printf("HighScore: " .. highScore, highScoreFont,0, winHeight/2 - 150, winWidth, "center")
-        buttons.overState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20, (60/2) - (#"Main Menu"/2), 3)
-        buttons.overState.restart:draw((winWidth/2) - 60, (winHeight/2) + 10,(60/2) - (#"Restart"/2), 3)
+        buttons.overState.mainMenu:draw((winWidth/2) - 60, (winHeight/2) - 20)
+        buttons.overState.restart:draw((winWidth/2) - 60, (winHeight/2) + 10)
     end
 end
