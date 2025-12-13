@@ -99,13 +99,13 @@ function love.keypressed(key)   --This function is called automatically whenever
     elseif key == "escape" and gameState["menu"] then
         love.event.quit()
     end
-    if key == "right" and directionQueue[#directionQueue] ~= "left"      
+    if (key == "right" or key == "d") and (directionQueue[#directionQueue] ~= "left" and directionQueue[#directionQueue] ~= "a")      
     or
-    key == "left" and directionQueue[#directionQueue] ~= "right" 
+    (key == "left" or key == "a" ) and (directionQueue[#directionQueue] ~= "right" and directionQueue[#directionQueue] ~= "d")
     or
-    key == "up" and directionQueue[#directionQueue] ~= "down"
+    (key == "up" or key == "w") and (directionQueue[#directionQueue] ~= "down" and directionQueue[#directionQueue] ~= "w")
     or
-    key == "down" and directionQueue[#directionQueue] ~= "up" then
+    (key == "down" or key == "s") and (directionQueue[#directionQueue] ~= "up" and directionQueue[#directionQueue] ~= "s") then
         table.insert(directionQueue, key)
     end
     if key == "space" then
@@ -119,7 +119,7 @@ function love.load()
     buttons.menuState.exitGame = button("Exit", love.event.quit, nil, 100, 20)
     buttons.pauseState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.pauseState.resume = button("Resume", startGame, nil, 120, 20)
-    buttons.overState.mainMenu = button("Main Menu", startGame, nil, 120, 20)
+    buttons.overState.mainMenu = button("Main Menu", startMenu, nil, 120, 20)
     buttons.overState.restart = button("Restart", startGame, nil, 120, 20)
     highScore = tonumber(data.load("HIGH"))       -- This loads the file that contains the players HighScore if they has played the game before
     snakeAlive = true
@@ -195,7 +195,7 @@ function love.update(dt)    -- Called every frame
     timer = timer + dt
     if gameState["game"] then
         if snakeAlive then  --This happens if the snake is still alive
-            if timer >= .1  then --This allows us to control the game's update rate 
+            if timer >= .07  then --This allows us to control the game's update rate 
                 timer = 0   --The timer will reset after some time has passed and when it does, the parts of the game that are in this if statement will update
                 --These variables are used to move the snake
                 local nextXPosition = snakeSegments[1].x
@@ -206,19 +206,19 @@ function love.update(dt)    -- Called every frame
                     table.remove(directionQueue,1)
                 end
                 --This makes the snake wrap around the screen when it goes past an edge
-                if directionQueue[1] == "right" then nextXPosition = nextXPosition+1
+                if directionQueue[1] == "right" or directionQueue[1] == "d" then nextXPosition = nextXPosition+1
                     if nextXPosition > gridXCount then
                         nextXPosition = 1
                     end
-                elseif directionQueue[1] == "left" then nextXPosition = nextXPosition-1
+                elseif directionQueue[1] == "left" or directionQueue[1] == "a" then nextXPosition = nextXPosition-1
                     if nextXPosition < 1 then
                         nextXPosition = gridXCount
                     end
-                elseif directionQueue[1] == "up" then nextYPosition = nextYPosition-1
+                elseif directionQueue[1] == "up" or directionQueue[1] == "w" then nextYPosition = nextYPosition-1
                     if nextYPosition < 1 then
                         nextYPosition = gridYCount
                     end
-                elseif directionQueue[1] == "down" then nextYPosition = nextYPosition+1
+                elseif directionQueue[1] == "down" or directionQueue[1] == "s" then nextYPosition = nextYPosition+1
                     if nextYPosition > gridYCount then
                         nextYPosition = 1
                     end
